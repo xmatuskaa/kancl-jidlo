@@ -80,28 +80,31 @@ async function scrapeSelepovaMenu(html, targetDay = null) {
     
     const todaySection = pageText.substring(dayIndex, endIndex);
     
-    // Extract soup - find "Polévka:" and get content until next dish
-    const soupMatch = todaySection.match(/Polévka:\s*([^]*?)(?=\d+\s*Kč|$)/s);
+    // Extract soup separately
+    const soupMatch = todaySection.match(/Polévka:\s*([^]*?)(?=\S.*?\d+\s*Kč)/s);
     if (soupMatch) {
       const soup = soupMatch[1].trim().replace(/\s+/g, ' ');
       menuItems.push(`Polévka: ${soup}`);
     }
     
-    // Extract menu items - find pattern: dish text + price + menu type
-    const menuPattern = /([^]*?)(\d+\s*Kč)(Menu\s*\d+|Desert)/g;
+    // Extract individual menu items - look for specific patterns
+    const menuItemPattern = /([^]*?)(\d+\s*Kč)\s*(Menu\s*\d+|Desert)/g;
     let match;
     
-    while ((match = menuPattern.exec(todaySection)) !== null) {
+    while ((match = menuItemPattern.exec(todaySection)) !== null) {
       let dishText = match[1].trim().replace(/\s+/g, ' ');
       
-      // Clean up dish text - remove soup and menu info
-      dishText = dishText.replace(/^.*?Polévka:.*?(?=\w)/, '').trim();
-      dishText = dishText.replace(/^\d+\s*Kč.*/, '').trim();
+      // Clean up - remove polévka part if it appears
+      dishText = dishText.replace(/^.*?Polévka:.*?(?=\w)/s, '');
+      // Remove any leftover menu references
+      dishText = dishText.replace(/Menu\s*\d+.*$/i, '');
+      dishText = dishText.replace(/Desert.*$/i, '');
+      dishText = dishText.trim();
       
       if (dishText && !dishText.includes('Polévka:') && dishText.length > 10) {
         const price = match[2].trim();
         const menuType = match[3].trim();
-        menuItems.push(`${dishText}\n${price}\n${menuType}`);
+        menuItems.push(`${dishText} - ${price} (${menuType})`);
       }
     }
   }
@@ -154,42 +157,35 @@ async function scrapePlzenskyDvurMenu(html, targetDay = null) {
     
     const todaySection = pageText.substring(dayIndex, endIndex);
     
-    // Add the day header
-    menuItems.push(dayMatch[0]);
-    
-    // Extract menu A - look for A: followed by content until price
-    const menuAMatch = todaySection.match(/A:\s*([^]*?)(\d+\s*Kč)(?=\s*Polévka)/s);
-    if (menuAMatch) {
-      menuItems.push('A:');
-      const dishText = menuAMatch[1].trim().replace(/\s+/g, ' ');
-      const price = menuAMatch[2].trim();
-      menuItems.push(`${dishText}\n${price}`);
-    }
-    
-    // Extract soup - look for "Polévka:" followed by text until "B:"
+    // Extract soup
     const soupMatch = todaySection.match(/Polévka:\s*([^]*?)(?=\s*B:)/s);
     if (soupMatch) {
-      menuItems.push('Polévka:');
       const soupText = soupMatch[1].trim().replace(/\s+/g, ' ');
-      menuItems.push(soupText);
+      menuItems.push(`Polévka: ${soupText}`);
+    }
+    
+    // Extract menu A
+    const menuAMatch = todaySection.match(/A:\s*([^]*?)(\d+\s*Kč)(?=\s*Polévka)/s);
+    if (menuAMatch) {
+      const dishText = menuAMatch[1].trim().replace(/\s+/g, ' ');
+      const price = menuAMatch[2].trim();
+      menuItems.push(`Menu A: ${dishText} - ${price}`);
     }
     
     // Extract menu B
     const menuBMatch = todaySection.match(/B:\s*([^]*?)(\d+\s*Kč)(?=\s*C:)/s);
     if (menuBMatch) {
-      menuItems.push('B:');
       const dishText = menuBMatch[1].trim().replace(/\s+/g, ' ');
       const price = menuBMatch[2].trim();
-      menuItems.push(`${dishText}\n${price}`);
+      menuItems.push(`Menu B: ${dishText} - ${price}`);
     }
     
-    // Extract menu C - look until end of section
+    // Extract menu C
     const menuCMatch = todaySection.match(/C:\s*([^]*?)(\d+\s*Kč)/s);
     if (menuCMatch) {
-      menuItems.push('C:');
       const dishText = menuCMatch[1].trim().replace(/\s+/g, ' ');
       const price = menuCMatch[2].trim();
-      menuItems.push(`${dishText}\n${price}`);
+      menuItems.push(`Menu C: ${dishText} - ${price}`);
     }
   }
   
@@ -252,9 +248,6 @@ async function scrapeLightOfIndiaMenu(html, targetDay = null) {
     
     const todaySection = pageText.substring(dayIndex, endIndex);
     
-    // Add day header
-    menuItems.push(searchDay);
-    
     // Extract numbered items (1. through 7.) using a more flexible pattern
     const itemPattern = /(\d+)\.\s+([^]*?)(\d+Kč)\s*(\([^)]*\))/g;
     let match;
@@ -264,7 +257,7 @@ async function scrapeLightOfIndiaMenu(html, targetDay = null) {
       const price = match[3];
       const allergens = match[4];
       
-      menuItems.push(`${dishText} ${price} ${allergens}`);
+      menuItems.push(`${dishText} - ${price} ${allergens}`);
     }
   }
   
