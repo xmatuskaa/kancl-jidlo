@@ -34,16 +34,22 @@ async function fetchPage(url) {
   }
 }
 
-async function scrapeSelepovaMenu(html) {
+async function scrapeSelepovaMenu(html, targetDay = null) {
   if (!html) return [];
   
   const $ = cheerio.load(html);
   const menuItems = [];
   
-  // Get today's day name in Czech
-  const today = new Date();
-  const dayNames = ['neděle', 'pondělí', 'úterý', 'středa', 'čtvrtek', 'pátek', 'sobota'];
-  const todayName = dayNames[today.getDay()];
+  // Get target day name in Czech
+  let todayName;
+  if (targetDay) {
+    const dayNames = ['neděle', 'pondělí', 'úterý', 'středa', 'čtvrtek', 'pátek', 'sobota'];
+    todayName = dayNames[targetDay];
+  } else {
+    const today = new Date();
+    const dayNames = ['neděle', 'pondělí', 'úterý', 'středa', 'čtvrtek', 'pátek', 'sobota'];
+    todayName = dayNames[today.getDay()];
+  }
   
   // Get the page content as text
   const pageText = $('body').text();
@@ -103,16 +109,22 @@ async function scrapeSelepovaMenu(html) {
   return menuItems;
 }
 
-async function scrapePlzenskyDvurMenu(html) {
+async function scrapePlzenskyDvurMenu(html, targetDay = null) {
   if (!html) return [];
   
   const $ = cheerio.load(html);
   const menuItems = [];
   
-  // Get today's day name in Czech
-  const today = new Date();
-  const dayNames = ['neděle', 'pondělí', 'úterý', 'středa', 'čtvrtek', 'pátek', 'sobota'];
-  const todayName = dayNames[today.getDay()];
+  // Get target day name in Czech
+  let todayName;
+  if (targetDay) {
+    const dayNames = ['neděle', 'pondělí', 'úterý', 'středa', 'čtvrtek', 'pátek', 'sobota'];
+    todayName = dayNames[targetDay];
+  } else {
+    const today = new Date();
+    const dayNames = ['neděle', 'pondělí', 'úterý', 'středa', 'čtvrtek', 'pátek', 'sobota'];
+    todayName = dayNames[today.getDay()];
+  }
   
   const pageText = $('body').text();
   
@@ -184,16 +196,22 @@ async function scrapePlzenskyDvurMenu(html) {
   return menuItems;
 }
 
-async function scrapeLightOfIndiaMenu(html) {
+async function scrapeLightOfIndiaMenu(html, targetDay = null) {
   if (!html) return [];
   
   const $ = cheerio.load(html);
   const menuItems = [];
   
-  // Get today's day name in Czech
-  const today = new Date();
-  const dayNames = ['neděle', 'pondělí', 'úterý', 'středa', 'čtvrtek', 'pátek', 'sobota'];
-  const todayName = dayNames[today.getDay()];
+  // Get target day name in Czech
+  let todayName;
+  if (targetDay) {
+    const dayNames = ['neděle', 'pondělí', 'úterý', 'středa', 'čtvrtek', 'pátek', 'sobota'];
+    todayName = dayNames[targetDay];
+  } else {
+    const today = new Date();
+    const dayNames = ['neděle', 'pondělí', 'úterý', 'středa', 'čtvrtek', 'pátek', 'sobota'];
+    todayName = dayNames[today.getDay()];
+  }
   
   // Light of India uses specific day names
   const lightOfIndiadays = {
@@ -255,12 +273,29 @@ async function scrapeLightOfIndiaMenu(html) {
 
 export default defineEventHandler(async (event) => {
   try {
+    // Get day parameter from query string (1=Monday, 2=Tuesday, ..., 5=Friday)
+    const query = getQuery(event);
+    const dayParam = query.day ? parseInt(query.day) : null;
+    
+    // If no day specified, use current day
+    let targetDay = dayParam;
+    if (!targetDay) {
+      const today = new Date();
+      targetDay = today.getDay(); // 0=Sunday, 1=Monday, ..., 6=Saturday
+    }
+    
+    // Validate day (only Monday-Friday supported: 1-5)
+    if (targetDay < 1 || targetDay > 5) {
+      // If weekend or invalid day, default to Monday
+      targetDay = 1;
+    }
+    
     const results = [];
     
     for (const restaurant of restaurants) {
       try {
         const html = await fetchPage(restaurant.url);
-        const menuItems = await restaurant.scraper(html);
+        const menuItems = await restaurant.scraper(html, targetDay);
         
         results.push({
           name: restaurant.name,
@@ -281,9 +316,17 @@ export default defineEventHandler(async (event) => {
       }
     }
     
+    // Create a date for the target day
+    const today = new Date();
+    const currentWeekDay = today.getDay();
+    const daysToAdd = targetDay - currentWeekDay;
+    const targetDate = new Date(today);
+    targetDate.setDate(today.getDate() + daysToAdd);
+    
     return {
       success: true,
-      date: new Date().toLocaleDateString('cs-CZ', {
+      selectedDay: targetDay,
+      date: targetDate.toLocaleDateString('cs-CZ', {
         weekday: 'long',
         year: 'numeric',
         month: 'long',

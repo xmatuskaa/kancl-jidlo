@@ -5,10 +5,27 @@
       <header class="text-center mb-8">
         <h1 class="text-4xl font-bold text-gray-800 mb-2">🍽️ Kancl Jídlo</h1>
         <p class="text-gray-600">Denní menu z vašich oblíbených restaurací</p>
-        <p class="text-sm text-gray-500 mt-2">{{ currentDate }}</p>
+        <p class="text-sm text-gray-500 mt-2">{{ selectedDate }}</p>
       </header>
 
+      <!-- Day selection buttons -->
       <div class="mb-6 text-center">
+        <div class="flex flex-wrap justify-center gap-2 mb-4">
+          <button
+            v-for="day in weekDays"
+            :key="day.value"
+            @click="selectDay(day.value)"
+            :class="[
+              'px-4 py-2 rounded-lg font-medium transition-colors duration-200',
+              selectedDay === day.value
+                ? 'bg-blue-600 text-white'
+                : 'bg-white text-gray-700 hover:bg-blue-50 border border-gray-300'
+            ]"
+          >
+            {{ day.label }}
+          </button>
+        </div>
+        
         <button
           @click="fetchMenus"
           :disabled="loading"
@@ -59,7 +76,7 @@
             </a>
 
             <div v-if="restaurant.success && restaurant.menuItems.length > 0">
-              <h3 class="text-lg font-medium text-gray-700 mb-3">Dnešní menu:</h3>
+              <h3 class="text-lg font-medium text-gray-700 mb-3">Menu:</h3>
               <ul class="space-y-2">
                 <li
                   v-for="(item, index) in restaurant.menuItems"
@@ -90,7 +107,7 @@
       </div>
 
       <div v-else-if="!loading" class="text-center py-12">
-        <p class="text-gray-500 text-lg">Klikněte na "Aktualizovat menu" pro načtení dnešních menu.</p>
+        <p class="text-gray-500 text-lg">Vyberte den a klikněte na "Aktualizovat menu" pro načtení menu.</p>
       </div>
     </div>
   </div>
@@ -100,25 +117,71 @@
 const loading = ref(false)
 const error = ref('')
 const restaurants = ref([])
+const selectedDay = ref(null)
+const selectedDate = ref('')
 
-const currentDate = computed(() => {
-  return new Date().toLocaleDateString('cs-CZ', {
+// Define weekdays (Monday=1 to Friday=5)
+const weekDays = [
+  { value: 1, label: 'Pondělí' },
+  { value: 2, label: 'Úterý' },
+  { value: 3, label: 'Středa' },
+  { value: 4, label: 'Čtvrtek' },
+  { value: 5, label: 'Pátek' }
+]
+
+// Initialize with current day or Monday if weekend
+const initializeDay = () => {
+  const today = new Date()
+  const currentDay = today.getDay() // 0=Sunday, 1=Monday, ..., 6=Saturday
+  
+  // If it's weekend (Sunday=0 or Saturday=6), default to Monday (1)
+  if (currentDay === 0 || currentDay === 6) {
+    selectedDay.value = 1
+  } else {
+    selectedDay.value = currentDay
+  }
+  
+  updateSelectedDate()
+}
+
+const updateSelectedDate = () => {
+  if (!selectedDay.value) return
+  
+  const today = new Date()
+  const currentWeekDay = today.getDay()
+  const daysToAdd = selectedDay.value - currentWeekDay
+  const targetDate = new Date(today)
+  targetDate.setDate(today.getDate() + daysToAdd)
+  
+  selectedDate.value = targetDate.toLocaleDateString('cs-CZ', {
     weekday: 'long',
     year: 'numeric',
     month: 'long',
     day: 'numeric'
   })
-})
+}
+
+const selectDay = (day) => {
+  selectedDay.value = day
+  updateSelectedDate()
+  // Auto-fetch menus when day is selected
+  fetchMenus()
+}
 
 const fetchMenus = async () => {
+  if (!selectedDay.value) return
+  
   loading.value = true
   error.value = ''
   
   try {
-    const data = await $fetch('/api/menus')
+    const data = await $fetch(`/api/menus?day=${selectedDay.value}`)
     
     if (data.success) {
       restaurants.value = data.restaurants
+      if (data.date) {
+        selectedDate.value = data.date
+      }
     } else {
       error.value = data.error || 'Neznámá chyba při načítání menu'
     }
@@ -137,8 +200,9 @@ const formatTime = (dateString) => {
   })
 }
 
-// Auto-load menus on component mount
+// Initialize day and auto-load menus on component mount
 onMounted(() => {
+  initializeDay()
   fetchMenus()
 })
 </script>

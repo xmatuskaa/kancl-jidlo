@@ -5,7 +5,8 @@ A Nuxt.js application that scrapes daily menus from Czech restaurants in Brno.
 ## Features
 
 - **Web Interface**: Beautiful, responsive UI showing daily menus from multiple restaurants
-- **Standalone Script**: Command-line script for quick menu checking
+- **Day Selection**: Browse menus for any weekday (Monday through Friday) using convenient buttons
+- **Standalone Script**: Command-line script for quick menu checking with day parameter support
 - **Real-time Scraping**: Fresh data fetched on demand
 - **Mobile Friendly**: Responsive design that works on all devices
 
@@ -34,24 +35,38 @@ A Nuxt.js application that scrapes daily menus from Czech restaurants in Brno.
 
 2. Open your browser and navigate to `http://localhost:3000` (or the port shown in the terminal)
 
-3. Click "Aktualizovat menu" to fetch the latest menus
+3. Use the weekday buttons (Pondělí, Úterý, Středa, Čtvrtek, Pátek) to select which day's menu you want to view
+
+4. Click "Aktualizovat menu" to fetch the menus for the selected day
 
 ### Standalone Script
 
 Run the standalone scraper from the command line:
 
 ```bash
+# Get today's menus
 npm run scrape-menus
+
+# Get menus for a specific day (1=Monday, 2=Tuesday, ..., 5=Friday)
+node scripts/scrape-menus.js --day=1    # Monday
+node scripts/scrape-menus.js --day=3    # Wednesday
+node scripts/scrape-menus.js --day=5    # Friday
 ```
 
-This will display today's menus from all restaurants directly in your terminal.
+This will display the selected day's menus from all restaurants directly in your terminal.
 
 ## API Endpoint
 
 The application also exposes an API endpoint at `/api/menus` that returns JSON data:
 
 ```bash
+# Get today's menus
 curl http://localhost:3000/api/menus
+
+# Get menus for a specific day (1=Monday, 2=Tuesday, ..., 5=Friday)
+curl http://localhost:3000/api/menus?day=1    # Monday
+curl http://localhost:3000/api/menus?day=3    # Wednesday
+curl http://localhost:3000/api/menus?day=5    # Friday
 ```
 
 ## Project Structure

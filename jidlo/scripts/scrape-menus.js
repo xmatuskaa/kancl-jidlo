@@ -36,16 +36,22 @@ async function fetchPage(url) {
   }
 }
 
-async function scrapeSelepovaMenu(html) {
+async function scrapeSelepovaMenu(html, targetDay = null) {
   if (!html) return [];
   
   const $ = cheerio.load(html);
   const menuItems = [];
   
-  // Get today's day name in Czech
-  const today = new Date();
-  const dayNames = ['neděle', 'pondělí', 'úterý', 'středa', 'čtvrtek', 'pátek', 'sobota'];
-  const todayName = dayNames[today.getDay()];
+  // Get target day name in Czech
+  let todayName;
+  if (targetDay) {
+    const dayNames = ['neděle', 'pondělí', 'úterý', 'středa', 'čtvrtek', 'pátek', 'sobota'];
+    todayName = dayNames[targetDay];
+  } else {
+    const today = new Date();
+    const dayNames = ['neděle', 'pondělí', 'úterý', 'středa', 'čtvrtek', 'pátek', 'sobota'];
+    todayName = dayNames[today.getDay()];
+  }
   
   // Get the page content as text
   const pageText = $('body').text();
@@ -117,16 +123,22 @@ async function scrapeSelepovaMenu(html) {
   return menuItems;
 }
 
-async function scrapePlzenskyDvurMenu(html) {
+async function scrapePlzenskyDvurMenu(html, targetDay = null) {
   if (!html) return [];
   
   const $ = cheerio.load(html);
   const menuItems = [];
   
-  // Get today's day name in Czech
-  const today = new Date();
-  const dayNames = ['neděle', 'pondělí', 'úterý', 'středa', 'čtvrtek', 'pátek', 'sobota'];
-  const todayName = dayNames[today.getDay()];
+  // Get target day name in Czech
+  let todayName;
+  if (targetDay) {
+    const dayNames = ['neděle', 'pondělí', 'úterý', 'středa', 'čtvrtek', 'pátek', 'sobota'];
+    todayName = dayNames[targetDay];
+  } else {
+    const today = new Date();
+    const dayNames = ['neděle', 'pondělí', 'úterý', 'středa', 'čtvrtek', 'pátek', 'sobota'];
+    todayName = dayNames[today.getDay()];
+  }
   
   const pageText = $('body').text();
   
@@ -198,16 +210,22 @@ async function scrapePlzenskyDvurMenu(html) {
   return menuItems;
 }
 
-async function scrapeLightOfIndiaMenu(html) {
+async function scrapeLightOfIndiaMenu(html, targetDay = null) {
   if (!html) return [];
   
   const $ = cheerio.load(html);
   const menuItems = [];
   
-  // Get today's day name in Czech
-  const today = new Date();
-  const dayNames = ['neděle', 'pondělí', 'úterý', 'středa', 'čtvrtek', 'pátek', 'sobota'];
-  const todayName = dayNames[today.getDay()];
+  // Get target day name in Czech
+  let todayName;
+  if (targetDay) {
+    const dayNames = ['neděle', 'pondělí', 'úterý', 'středa', 'čtvrtek', 'pátek', 'sobota'];
+    todayName = dayNames[targetDay];
+  } else {
+    const today = new Date();
+    const dayNames = ['neděle', 'pondělí', 'úterý', 'středa', 'čtvrtek', 'pátek', 'sobota'];
+    todayName = dayNames[today.getDay()];
+  }
   
   // Light of India uses specific day names
   const lightOfIndiadays = {
@@ -270,14 +288,46 @@ async function scrapeLightOfIndiaMenu(html) {
 async function main() {
   console.log('🍽️  Scraping daily menus...\n');
   
-  const today = new Date();
-  const dateStr = today.toLocaleDateString('cs-CZ', {
-    weekday: 'long',
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric'
-  });
-  console.log(`📅 Today: ${dateStr}\n`);
+  // Parse command line arguments
+  const args = process.argv.slice(2);
+  let targetDay = null;
+  
+  // Look for --day=X parameter
+  for (const arg of args) {
+    if (arg.startsWith('--day=')) {
+      const dayValue = parseInt(arg.split('=')[1]);
+      if (dayValue >= 1 && dayValue <= 5) {
+        targetDay = dayValue;
+      }
+    }
+  }
+  
+  // Create date for display
+  let displayDate;
+  if (targetDay) {
+    const today = new Date();
+    const currentWeekDay = today.getDay();
+    const daysToAdd = targetDay - currentWeekDay;
+    const targetDate = new Date(today);
+    targetDate.setDate(today.getDate() + daysToAdd);
+    
+    displayDate = targetDate.toLocaleDateString('cs-CZ', {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric'
+    });
+  } else {
+    const today = new Date();
+    displayDate = today.toLocaleDateString('cs-CZ', {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric'
+    });
+  }
+  
+  console.log(`📅 Target date: ${displayDate}\n`);
   
   for (const restaurant of restaurants) {
     try {
@@ -285,7 +335,7 @@ async function main() {
       console.log(`🔗 ${restaurant.url}`);
       
       const html = await fetchPage(restaurant.url);
-      const menuItems = await restaurant.scraper(html);
+      const menuItems = await restaurant.scraper(html, targetDay);
       
       console.log('📋 Menu:');
       if (menuItems.length > 0) {
