@@ -18,6 +18,16 @@ const restaurants = [
     name: 'Light of India',
     url: 'http://www.lightofindia.cz/lang-cs/denni-menu',
     scraper: scrapeLightOfIndiaMenu
+  },
+  {
+    name: 'POKECZ',
+    url: 'https://www.pokecz.cz/', // Using placeholder URL since menu is static
+    scraper: scrapePokeczMenu
+  },
+  {
+    name: 'Bistro Bastardo',
+    url: 'https://bistro-bastardo.cz/', // Using placeholder URL since they don't have a website
+    scraper: scrapeBistroBastardoMenu
   }
 ];
 
@@ -262,6 +272,33 @@ async function scrapeLightOfIndiaMenu(html, targetDay = null) {
       menuItems.push(`${dishText} - ${price} ${allergens}`);
     }
   }
+  
+  return menuItems;
+}
+
+async function scrapePokeczMenu(html, targetDay = null) {
+  // POKECZ has a stable menu that doesn't change daily
+  const menuItems = [
+    'ATUNA MATATA - sushi rýže, tuňák, teriyaki, jarní cibulka, červené zelí, mrkev, mango, wakame, zázvor, koriandr, sezam, chips cibulka - 288 Kč',
+    'HAWAIIAN POKÉ - sushi rýže, ponzu, dvojitá dávka masa ~ tuňák a losos, sriracha mayo, jarní cibulka, ředkvičky, koriandr, sezam, chips cibulka - 298 Kč',
+    'FUNKY SALMON - sushi rýže, ponzu, losos, jarní cibulka, sweet mayo, mungo klíčky, wakame, edamame, rajčata, pomeranč, koriandr, kešu, chips cibulka - 288 Kč',
+    'CHICKEN POKÉ - sushi rýže, teriyaki, kuřecí maso, mango mayo, jarní cibulka, kukuřice, mrkev, edamame, okurek, ananas, koriandr, chips cibulka - 278 Kč',
+    'SPICY SALMON - sushi rýže, ponzu, ostrý losos, jarní cibulka, červené zelí, wakame, edamame, ananas, takuan, arašídy, koriandr, chips cibulka - 288 Kč',
+    'SPICY TUNA - sushi rýže, ponzu, ostrý tuňák, jarní cibulka, červené zelí, wakame, edamame, ananas, takuan, arašídy, koriandr, chips cibulka - 288 Kč'
+  ];
+  
+  return menuItems;
+}
+
+async function scrapeBistroBastardoMenu(html, targetDay = null) {
+  // Bistro Bastardo has a stable menu
+  const menuItems = [
+    'Polévka dne - 55 Kč',
+    'Burrito Barbacoa - 180 Kč',
+    'Burrito Tinga - 165 Kč',
+    'Quesadilla Pastor - 165 Kč',
+    '3 Tacos Carnitas - 165 Kč'
+  ];
   
   return menuItems;
 }
