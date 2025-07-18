@@ -15,6 +15,9 @@ A Nuxt.js application that scrapes daily menus from Czech restaurants in Brno.
 1. **Šelepová** - `https://www.selepova.cz/denni-menu/`
 2. **Plzeňský dvůr** - `https://www.plzenskydvur.cz/tydenni-menu`
 3. **Light of India** - `http://www.lightofindia.cz/lang-cs/denni-menu`
+4. **POKECZ** - Stable poké bowl menu
+5. **Bistro Bastardo** - Mexican food menu
+6. **TAO Restaurant** - `https://www.taorestaurant.cz/tydenni_menu/nabidka/` - Vietnamese & Japanese cuisine
 
 ## Installation
 

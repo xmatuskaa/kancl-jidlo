@@ -26,6 +26,11 @@ const restaurants = [
     name: 'Bistro Bastardo',
     url: 'https://bistro-bastardo.cz/',
     scraper: scrapeBistroBastardoMenu
+  },
+  {
+    name: 'TAO Restaurant',
+    url: 'https://www.taorestaurant.cz/tydenni_menu/nabidka/',
+    scraper: scrapeTaoMenu
   }
 ];
 
@@ -297,6 +302,101 @@ async function scrapeBistroBastardoMenu(html, targetDay = null) {
     'Quesadilla Pastor - 165 Kč',
     '3 Tacos Carnitas - 165 Kč'
   ];
+  
+  return menuItems;
+}
+
+async function scrapeTaoMenu(html, targetDay = null) {
+  if (!html) return [];
+  
+  const $ = cheerio.load(html);
+  const menuItems = [];
+  
+  // Get target day name in Czech
+  let todayName;
+  if (targetDay) {
+    const dayNames = ['neděle', 'pondělí', 'úterý', 'středa', 'čtvrtek', 'pátek', 'sobota'];
+    todayName = dayNames[targetDay];
+  } else {
+    const today = new Date();
+    const dayNames = ['neděle', 'pondělí', 'úterý', 'středa', 'čtvrtek', 'pátek', 'sobota'];
+    todayName = dayNames[today.getDay()];
+  }
+  
+  const pageText = $('body').text();
+  
+  // Extract weekly menu items (M1-M9) - these are available all week
+  // Split by menu sections and process each individually
+  const menuSections = pageText.split(/(?=\d+\.\s*M\d+[,:]\s*|M\d+:)/);
+  
+  for (const section of menuSections) {
+    // Look for menu items in each section - use backwards approach
+    const menuMatch = section.match(/M(\d+)[,:]/);
+    if (menuMatch) {
+      const menuNumber = menuMatch[1];
+      
+      // Find the price in this section - handle Unicode normalization
+      const normalizedSection = section.normalize('NFC');
+      const priceMatch = normalizedSection.match(/(\d+)\s*kč\.?/i);
+      if (priceMatch) {
+        const price = priceMatch[1];
+        
+        // Get text before the price as the dish name
+        const beforePrice = normalizedSection.substring(0, priceMatch.index).trim();
+        const dishMatch = beforePrice.match(/M\d+[,:]\s*(.+)/);
+        if (dishMatch) {
+          let dishName = dishMatch[1].trim();
+          
+          // Clean up the dish name - remove emojis and extra symbols
+          dishName = dishName.replace(/[🇻🇳🇯🇵🍏🥭🥑🍱]/g, '').replace(/\s+/g, ' ').trim();
+          dishName = dishName.replace(/\.\.\./g, '').replace(/…/g, '').trim();
+          
+          // Remove allergen numbers at the end (like "1,3.." or "1,5,6,9")
+          dishName = dishName.replace(/\s*[\d,.\s]*$/, '').trim();
+          
+          // Format the final dish name
+          if (dishName.length > 5) {
+            menuItems.push(`M${menuNumber}: ${dishName} - ${price} Kč`);
+          }
+        }
+      }
+    }
+  }
+  
+  // Extract daily special based on target day
+  const dayNames = {
+    'pondělí': 'Pondělí',
+    'úterý': 'Úterý',
+    'středa': 'Středa',
+    'čtvrtek': 'Čtvrtek',
+    'pátek': 'Pátek'
+  };
+  
+  const searchDay = dayNames[todayName];
+  if (searchDay) {
+    // Look for the daily special in the "Speciální" section
+    const daySpecialPattern = new RegExp(`${searchDay}:([^]*?)(?=\\s*(Pondělí|Úterý|Středa|Čtvrtek|Pátek|Jídlo sebou):|$)`, 'i');
+    const daySpecialMatch = pageText.match(daySpecialPattern);
+    
+    if (daySpecialMatch) {
+      let specialText = daySpecialMatch[1].trim().replace(/\s+/g, ' ');
+      
+      // Clean up emojis and extra symbols
+      specialText = specialText.replace(/[🇻🇳🇯🇵🍏🥭🥑🍱]/g, '').replace(/…/g, '').trim();
+      
+      // Extract price if present
+      const priceMatch = specialText.match(/(\d+)\s*kč/i);
+      if (priceMatch) {
+        const price = priceMatch[1];
+        // Clean up the text and format it nicely - remove allergen numbers at the end
+        specialText = specialText.replace(/\s*\d+\s*kč.*$/i, '').trim();
+        specialText = specialText.replace(/\s*\d+[,.\s]*$/, '').trim();
+        menuItems.push(`Speciální ${todayName}: ${specialText} - ${price} Kč`);
+      } else {
+        menuItems.push(`Speciální ${todayName}: ${specialText}`);
+      }
+    }
+  }
   
   return menuItems;
 }
