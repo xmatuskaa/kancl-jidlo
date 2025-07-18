@@ -96,12 +96,6 @@
               <p>Chyba při načítání menu:</p>
               <p class="text-sm">{{ restaurant.error }}</p>
             </div>
-
-            <div class="mt-4 pt-4 border-t border-gray-200">
-              <p class="text-xs text-gray-400">
-                Naposledy aktualizováno: {{ formatTime(restaurant.lastUpdated) }}
-              </p>
-            </div>
           </div>
         </div>
       </div>
